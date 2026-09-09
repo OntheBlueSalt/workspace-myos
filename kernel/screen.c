@@ -1,17 +1,14 @@
 #include "screen.h"
 #include <stdint.h>
 
+extern void outb(uint16_t port, uint8_t value);
+
 #define VIDEO_MEMORY 0xB8000
 #define MAX_ROWS 25
 #define MAX_COLS 80
 
 static int cursor_row = 0;
 static int cursor_col = 0;
-
-// 端口输出字节
-void outb(uint16_t port, uint8_t value) {
-    asm volatile("outb %0, %1" : : "a"(value), "Nd"(port));
-}
 
 // 更新硬件光标位置
 void update_cursor(int row, int col) {
