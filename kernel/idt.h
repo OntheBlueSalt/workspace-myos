@@ -18,7 +18,11 @@ struct idt_ptr {
     uint32_t base;
 } __attribute__((packed));
 
+uint8_t inb(uint16_t port);
+void idt_set_gate(int num, uint32_t base, uint16_t selector, uint8_t flags);
+void pic_remap();
 // 初始化
 void idt_init();
+void keyboard_handler();
 
 #endif

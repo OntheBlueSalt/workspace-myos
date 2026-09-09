@@ -66,3 +66,38 @@ void print_line(const char *str) {
     print_string(str);
     print_char('\n');
 }
+
+void move_cursor_left() {
+    if (cursor_col > 0) {
+        cursor_col--;
+    } else if (cursor_row > 0) {
+        cursor_row--;
+        cursor_col = MAX_COLS - 1;
+    }
+    update_cursor(cursor_row, cursor_col);
+}
+
+void move_cursor_right() {
+    if (cursor_col < MAX_COLS - 1) {
+        cursor_col++;
+    } else if (cursor_row < MAX_ROWS - 1) {
+        cursor_row++;
+        cursor_col = 0;
+    }
+    update_cursor(cursor_row, cursor_col);
+}
+
+void backspace() {
+    if (cursor_col > 0) {
+        cursor_col--;
+    } else if (cursor_row > 0) {
+        cursor_row--;
+        cursor_col = MAX_COLS - 1;
+    }
+    // 用空格覆盖当前位置
+    char *video = (char *) VIDEO_MEMORY;
+    int offset = (cursor_row * MAX_COLS + cursor_col) * 2;
+    video[offset] = ' ';
+    video[offset + 1] = 0x0F;
+    update_cursor(cursor_row, cursor_col);
+}

@@ -67,52 +67,90 @@ void idt_init() {
 // 键盘中断处理函数（C 部分）
 void keyboard_handler() {
     uint8_t scancode = inb(0x60);
+    static int e0_prefix = 0;    // 静态调用
 
-    if (!(scancode & 0x80)) {  // 按下事件
-        char c = '?';
-        switch (scancode) {
-            case 0x02: c = '1'; break;
-            case 0x03: c = '2'; break;
-            case 0x04: c = '3'; break;
-            case 0x05: c = '4'; break;
-            case 0x06: c = '5'; break;
-            case 0x07: c = '6'; break;
-            case 0x08: c = '7'; break;
-            case 0x09: c = '8'; break;
-            case 0x0A: c = '9'; break;
-            case 0x0B: c = '0'; break;
-            case 0x10: c = 'q'; break;
-            case 0x11: c = 'w'; break;
-            case 0x12: c = 'e'; break;
-            case 0x13: c = 'r'; break;
-            case 0x14: c = 't'; break;
-            case 0x15: c = 'y'; break;
-            case 0x16: c = 'u'; break;
-            case 0x17: c = 'i'; break;
-            case 0x18: c = 'o'; break;
-            case 0x19: c = 'p'; break;
-            case 0x1E: c = 'a'; break;
-            case 0x1F: c = 's'; break;
-            case 0x20: c = 'd'; break;
-            case 0x21: c = 'f'; break;
-            case 0x22: c = 'g'; break;
-            case 0x23: c = 'h'; break;
-            case 0x24: c = 'j'; break;
-            case 0x25: c = 'k'; break;
-            case 0x26: c = 'l'; break;
-            case 0x2C: c = 'z'; break;
-            case 0x2D: c = 'x'; break;
-            case 0x2E: c = 'c'; break;
-            case 0x2F: c = 'v'; break;
-            case 0x30: c = 'b'; break;
-            case 0x31: c = 'n'; break;
-            case 0x32: c = 'm'; break;
-            case 0x39: c = ' '; break;
-            default: c = 0; break;
+    if (scancode == 0xE0) {
+        e0_prefix = 1;
+        outb(0x20, 0x20);   // 发送EOI
+        return;
+    }
+
+    // 移动
+    if (e0_prefix) {
+        e0_prefix = 0;
+        if (scancode == 0x4B) {
+            move_cursor_left();
+        } else if (scancode == 0x4D) {
+            move_cursor_right();
         }
-        if (c != 0) {
-            print_char(c);
-        }
+        outb(0x20, 0x20);
+        return;
+    }
+
+    // 普通键处理
+    if (scancode & 0x80) {
+        outb(0x20, 0x20);
+        return;
+    }
+
+    // 退格键
+    if (scancode == 0x0E) {
+        backspace();
+        outb(0x20, 0x20);
+        return;
+    }
+
+    // 回车键
+    if (scancode == 0x1C) {
+        print_char('\n');
+        outb(0x20, 0x20);
+        return;
+    }
+
+    char c = '?';
+
+    switch (scancode) {
+        case 0x02: c = '1'; break;
+        case 0x03: c = '2'; break;
+        case 0x04: c = '3'; break;
+        case 0x05: c = '4'; break;
+        case 0x06: c = '5'; break;
+        case 0x07: c = '6'; break;
+        case 0x08: c = '7'; break;
+        case 0x09: c = '8'; break;
+        case 0x0A: c = '9'; break;
+        case 0x0B: c = '0'; break;
+        case 0x10: c = 'q'; break;
+        case 0x11: c = 'w'; break;
+        case 0x12: c = 'e'; break;
+        case 0x13: c = 'r'; break;
+        case 0x14: c = 't'; break;
+        case 0x15: c = 'y'; break;
+        case 0x16: c = 'u'; break;
+        case 0x17: c = 'i'; break;
+        case 0x18: c = 'o'; break;
+        case 0x19: c = 'p'; break;
+        case 0x1E: c = 'a'; break;
+        case 0x1F: c = 's'; break;
+        case 0x20: c = 'd'; break;
+        case 0x21: c = 'f'; break;
+        case 0x22: c = 'g'; break;
+        case 0x23: c = 'h'; break;
+        case 0x24: c = 'j'; break;
+        case 0x25: c = 'k'; break;
+        case 0x26: c = 'l'; break;
+        case 0x2C: c = 'z'; break;
+        case 0x2D: c = 'x'; break;
+        case 0x2E: c = 'c'; break;
+        case 0x2F: c = 'v'; break;
+        case 0x30: c = 'b'; break;
+        case 0x31: c = 'n'; break;
+        case 0x32: c = 'm'; break;
+        case 0x39: c = ' '; break;
+        default: c = 0; break;
+    }
+    if (c != 0) {
+        print_char(c);
     }
 
     // 发送 EOI
