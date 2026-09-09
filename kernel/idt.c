@@ -1,5 +1,6 @@
 #include "idt.h"
 #include "screen.h"
+#include "scheduler.h"
 #include <stdint.h>
 
 
@@ -10,6 +11,7 @@ struct idt_ptr idt_ptr;
 
 // 外部声明：汇编中的中断入口
 extern void keyboard_handler_entry();
+extern void timer_handler_entry();
 
 
 void outb(uint16_t port, uint8_t value) {
@@ -42,8 +44,11 @@ void pic_remap() {
     outb(0xA1, 0x02);
     outb(0x21, 0x01);
     outb(0xA1, 0x01);
-    outb(0x21, 0xFD);  // 主片：只允许 IRQ1 (键盘)，屏蔽 IRQ0 (定时器) 等其他中断
-    outb(0xA1, 0xFF);  // 从片：屏蔽所有中断    
+//    outb(0x21, 0xFD);  // 只允许 IRQ1 (键盘)
+//    outb(0xA1, 0xFF);  // 屏蔽从片所有中断
+    outb(0x21, 0xFC);  // 允许 IRQ0 (定时器) 和 IRQ1 (键盘)
+    outb(0xA1, 0xFF);  // 从片全部屏蔽
+
 }
 
 
@@ -53,7 +58,8 @@ void idt_init() {
     idt_ptr.limit = sizeof(struct idt_entry) * 256 - 1;
     idt_ptr.base  = (uint32_t)&idt;
 
-    // 设置键盘中断（向量 33，IRQ1）
+    // 设置键盘中断（向量 33，IRQ1） 和 定时器中断 (32,IRQ0)
+    idt_set_gate(32, (uint32_t)timer_handler_entry, 0x08, 0x8E);
     idt_set_gate(33, (uint32_t)keyboard_handler_entry, 0x08, 0x8E);
 
     // 加载 IDT
@@ -154,5 +160,41 @@ void keyboard_handler() {
     }
 
     // 发送 EOI
+    outb(0x20, 0x20);
+}
+
+//int tick_count = 0;
+
+void timer_handler() {
+//    tick_count++;
+//
+//    int row = 24;
+//    int col = 70;
+//
+//    char *video = (char *) 0xB8000;
+//    int offset = (row * 80 + col) * 2;
+//
+//    char buf[10];
+//    int n = tick_count;
+//    int i = 0;
+//    if (n == 0) buf[i++] = '0';
+//    while (n>0) {
+//        buf[i++] = '0' + (n % 10);
+//        n /= 10;
+//    }
+//    // 逆序
+//    for (int j = 0; j < i / 2; j++) {
+//        char tmp = buf[j];
+//        buf[j] = buf[i - 1 - j];
+//        buf[i - 1 - j] = tmp;
+//    }
+//    buf[i] = '\0';
+//
+//    for (int j = 0; j < i; j++) {
+//        video[(row * 80 + col + j) * 2] = buf[j];
+//        video[(row * 80 + col + j) * 2 + 1] = 0x0F;
+//    }
+//
+//    scheduler_tick();
     outb(0x20, 0x20);
 }

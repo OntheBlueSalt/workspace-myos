@@ -24,5 +24,6 @@ void pic_remap();
 // 初始化
 void idt_init();
 void keyboard_handler();
+void timer_handler();
 
 #endif

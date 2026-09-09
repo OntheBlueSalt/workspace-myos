@@ -3,8 +3,10 @@ section .text
 
 global load_idt
 global keyboard_handler_entry
+global timer_handler_entry
 
 extern keyboard_handler
+extern timer_handler
 
 load_idt:
     mov eax, [esp + 4]    ; 参数：idt_ptr 结构体指针
@@ -16,3 +18,9 @@ keyboard_handler_entry:
     call keyboard_handler ; 调用 C 处理函数
     popa                  ; 恢复寄存器
     iretd                 ; 中断返回
+
+timer_handler_entry:
+    pusha               ;  保存通用寄存器
+    call timer_handler  ;  调用处理函数
+    popa                ;  恢复寄存器
+    iretd               ;  中断返回
