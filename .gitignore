@@ -56,5 +56,7 @@ dkms.conf
 
 build/*
 *.bin
+*.o
+os-image.bin
 
 .idea

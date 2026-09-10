@@ -101,3 +101,19 @@ void backspace() {
     video[offset + 1] = 0x0F;
     update_cursor(cursor_row, cursor_col);
 }
+
+void print_dec(uint32_t num) {
+    if (num == 0) {
+        print_char('0');
+        return;
+    }
+    char buf[12];
+    int i = 0;
+    while (num > 0) {
+        buf[i++] = '0' + (num % 10);
+        num = num / 10;   // 正确赋值
+    }
+    for (int j = i - 1; j >= 0; j--) {
+        print_char(buf[j]);
+    }
+}

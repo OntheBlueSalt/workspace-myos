@@ -1,8 +1,37 @@
 # workspace-myos
 
+## 目录结构
+```text
+workspace-myos/
+├── boot/
+│   └── boot.asm              # 引导扇区
+├── kernel/
+│   ├── arch/                 # 架构相关（汇编）
+│   │   ├── start.asm         # 内核入口
+│   │   ├── switch.asm        # 任务上下文切换
+│   │   └── interrupt.asm     # 中断入口
+│   ├── drivers/              # 设备驱动
+│   │   ├── screen.c
+│   │   └── screen.h
+│   ├── interrupt/            # 中断管理
+│   │   ├── idt.c
+│   │   └── idt.h
+│   ├── mm/                   # 内存管理
+│   │   ├── memory.c
+│   │   └── memory.h
+│   ├── sched/                # 任务调度
+│   │   ├── scheduler.c
+│   │   └── scheduler.h
+│   ├── kernel.c              # 内核主入口
+│   └── linker.ld             # 链接脚本
+├── build/                    # 编译产物（gitignore）
+├── .gitignore
+├── Makefile
+└── README.md
+```
+
 ## evn
 wsl2 Ubuntn 24环境下进行
-
 
 ## 准备工作：
 ```bash
@@ -25,4 +54,6 @@ objdump -d build/kernel.elf | head -20
 # 检查链接脚本
 cat kernel/linker.ld | head -100
 ```
+
+
 

@@ -1,3 +1,4 @@
+; 引导扇区
 [org 0x7c00]
     mov ax, 0
     mov ds, ax
@@ -40,7 +41,7 @@ load_kernel:
     mov bx, 0x0000
 
     mov ah, 0x02           ; BIOS 读扇区
-    mov al, 8              ; 读取 8 个扇区
+    mov al, 16             ; 读取 16 个扇区
     mov ch, 0x00           ; 柱面 0
     mov cl, 0x02           ; 从扇区 2 开始
     mov dh, 0x00           ; 磁头 0
