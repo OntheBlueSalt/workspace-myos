@@ -9,7 +9,7 @@ static void set_bit(uint32_t page) {
 }
 
 static void clear_bit(uint32_t page) {
-    bitmap[page / 8] |= ~(1 << (page % 8));
+    bitmap[page / 8] &= ~(1 << (page % 8));
 }
 
 static int test_bit(uint32_t page) {

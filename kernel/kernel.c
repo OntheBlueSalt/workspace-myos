@@ -2,6 +2,7 @@
 #include "interrupt/idt.h"
 #include "sched/scheduler.h"
 #include "mm/memory.h"
+#include "mm/heap.h"
 
 extern uint32_t __bss_start;
 extern uint32_t __bss_end;
@@ -40,6 +41,22 @@ void main() {
 
     print_string("After free: ");
     print_dec(get_free_page_count());
+    print_char('\n');
+
+    // 分配几块
+    void* a = kmalloc(16);
+    void* b = kmalloc(16);
+    void* c = kmalloc(16);
+    print_string("After 3 kmalloc: ");
+    print_dec(heap_free_bytes());
+    print_char('\n');
+
+    // 释放
+    kfree(a);
+    kfree(b);
+    kfree(c);
+    print_string("After kfree: ");
+    print_dec(heap_free_bytes());
     print_char('\n');
 
     while (1) {

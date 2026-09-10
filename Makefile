@@ -43,6 +43,7 @@ $(KERNEL_ELF): $(KERNEL_OBJECTS) kernel/linker.ld
 		build/drivers/screen.o \
 		build/interrupt/idt.o \
 		build/mm/memory.o \
+		build/mm/heap.o \
 		build/sched/scheduler.o \
 		build/arch/interrupt.o \
 		build/arch/switch.o
