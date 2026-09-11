@@ -1,6 +1,6 @@
 #include "idt.h"
 #include "../drivers/screen.h"
-#include "../sched/scheduler.h"
+#include "../shell/shell.h"
 #include <stdint.h>
 
 
@@ -101,14 +101,14 @@ void keyboard_handler() {
 
     // 退格键
     if (scancode == 0x0E) {
-        backspace();
+        shell_input_char('\b');
         outb(0x20, 0x20);
         return;
     }
 
     // 回车键
     if (scancode == 0x1C) {
-        print_char('\n');
+        shell_input_char('\n');
         outb(0x20, 0x20);
         return;
     }
@@ -156,7 +156,7 @@ void keyboard_handler() {
         default: c = 0; break;
     }
     if (c != 0) {
-        print_char(c);
+        shell_input_char(c);
     }
 
     // 发送 EOI

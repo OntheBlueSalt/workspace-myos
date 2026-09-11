@@ -1,8 +1,8 @@
 #include "drivers/screen.h"
 #include "interrupt/idt.h"
-#include "sched/scheduler.h"
 #include "mm/memory.h"
 #include "mm/heap.h"
+#include "shell/shell.h"
 
 extern uint32_t __bss_start;
 extern uint32_t __bss_end;
@@ -15,7 +15,6 @@ void clear_bss() {
 }
 
 void main() {
-
     clear_bss();
 
     clear_screen();
@@ -23,41 +22,10 @@ void main() {
     print_line("This is my OS...");
 
     memory_init();
-    print_string("Free pages: ");
-    print_dec(get_free_page_count());
-    print_char('\n');
-
-    void* p1 = alloc_page();
-    void* p2 = alloc_page();
-    void* p3 = alloc_page();
-
-    print_string("After 3 allocs: ");
-    print_dec(get_free_page_count());
-    print_char('\n');
-
-    free_page(p1);
-    free_page(p2);
-    free_page(p3);
-
-    print_string("After free: ");
-    print_dec(get_free_page_count());
-    print_char('\n');
-
-    // 分配几块
-    void* a = kmalloc(16);
-    void* b = kmalloc(16);
-    void* c = kmalloc(16);
-    print_string("After 3 kmalloc: ");
-    print_dec(heap_free_bytes());
-    print_char('\n');
-
-    // 释放
-    kfree(a);
-    kfree(b);
-    kfree(c);
-    print_string("After kfree: ");
-    print_dec(heap_free_bytes());
-    print_char('\n');
+    heap_init();
+    idt_init();
+    
+    shell_run();
 
     while (1) {
         asm volatile("hlt");
