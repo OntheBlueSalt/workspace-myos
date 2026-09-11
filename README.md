@@ -13,6 +13,9 @@ workspace-myos/
 │   ├── drivers/              # 设备驱动
 │   │   ├── screen.c
 │   │   └── screen.h
+│   ├── fs/                   # 内存文件系统
+│   │   ├── ramfs.c
+│   │   └── ramfs.h
 │   ├── interrupt/            # 中断管理
 │   │   ├── idt.c
 │   │   └── idt.h
@@ -22,6 +25,9 @@ workspace-myos/
 │   ├── sched/                # 任务调度
 │   │   ├── scheduler.c
 │   │   └── scheduler.h
+│   ├── shell/                # shell
+│   │   ├── shell.c
+│   │   └── shell.h
 │   ├── kernel.c              # 内核主入口
 │   └── linker.ld             # 链接脚本
 ├── build/                    # 编译产物（gitignore）

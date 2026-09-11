@@ -23,6 +23,7 @@ LINK_OBJECTS = \
 	build/arch/start.o \
 	build/kernel.o \
 	build/shell/shell.o \
+	build/fs/ramfs.o \
 	build/drivers/screen.o \
 	build/interrupt/idt.o \
 	build/mm/memory.o \

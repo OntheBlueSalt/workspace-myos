@@ -2,6 +2,7 @@
 #include "../mm/memory.h"
 #include "../drivers/screen.h"
 #include "../mm/heap.h"
+#include "../fs/ramfs.h"
 
 
 #define LINE_MAX    128
@@ -83,6 +84,11 @@ static void execute(const char *cmd)
         print_line("  mem   - memory info");
         print_line("  clear - clear screen");
         print_line("  echo X- print X");
+        print_line("  ls         - list files");
+        print_line("  touch NAME - create file");
+        print_line("  cat NAME   - show file");
+        print_line("  write NAME CONTENT - write file");
+        print_line("  rm NAME    - delete file");
     } else if (str_eq(cmd, "mem"))
     {
         cmd_mem();
@@ -98,6 +104,40 @@ static void execute(const char *cmd)
     } else if (cmd[0] == '\0')
     {
 
+    } else if (str_eq(cmd, "ls"))
+    {
+        ramfs_list();
+    } else if (str_starts_with(cmd, "touch "))
+    {
+        if (ramfs_create(cmd + 6) == 0)
+            print_line("created");
+        else
+            print_line("failed");
+    } else if (str_starts_with(cmd, "cat "))
+    {
+        char buf[1024];
+        if (ramfs_read(cmd + 4, buf, sizeof(buf)) >= 0)
+            print_line(buf);
+        else
+            print_line("no such file");
+    } else if (str_starts_with(cmd, "rm "))
+    {
+        if (ramfs_delete(cmd + 3) == 0)
+            print_line("deleted");
+        else
+            print_line("no such file");
+    } else if (str_starts_with(cmd, "write "))
+    {
+        const char *p = cmd + 6;
+        char name[32];
+        int n = 0;
+        while (*p && *p != ' ' && n < 31) name[n++] = *p++;
+        name[n] = '\0';
+        if (*p == ' ') p++;   // 跳过空格
+        if (ramfs_write(name, p) == 0)
+            print_line("written");
+        else
+            print_line("no such file");
     } else
     {
         print_string("Unknown command: ");

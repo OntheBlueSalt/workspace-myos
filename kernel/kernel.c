@@ -1,4 +1,5 @@
 #include "drivers/screen.h"
+#include "fs/ramfs.h"
 #include "interrupt/idt.h"
 #include "mm/memory.h"
 #include "mm/heap.h"
@@ -23,6 +24,7 @@ void main() {
 
     memory_init();
     heap_init();
+    ramfs_init();
     idt_init();
     
     shell_run();
