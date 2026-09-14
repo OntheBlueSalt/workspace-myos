@@ -75,6 +75,7 @@ void keyboard_handler() {
     uint8_t scancode = inb(0x60);
     static int e0_prefix = 0;
     static int shift_pressed = 0;
+    static int ctrl_pressed = 0;
 
     static const char keymap_normal[128] = {
         0,   27, '1','2','3','4','5','6','7','8','9','0','-','=','\b',
@@ -102,6 +103,8 @@ void keyboard_handler() {
         e0_prefix = 0;
         if (scancode == 0x4B) move_cursor_left();
         else if (scancode == 0x4D) move_cursor_right();
+        else if (scancode == 0x48) shell_history_up();
+        else if (scancode == 0x50) shell_history_down();
         outb(0x20, 0x20);
         return;
     }
@@ -118,6 +121,18 @@ void keyboard_handler() {
         outb(0x20, 0x20);
         return;
     }
+    // Ctrl 按下
+    if (scancode == 0x1D) {
+        ctrl_pressed = 1;
+        outb(0x20, 0x20);
+        return;
+    }
+    // Ctrl 释放
+    if (scancode == 0x9D) {
+        ctrl_pressed = 0;
+        outb(0x20, 0x20);
+        return;
+    }
 
     // 其他键：只处理按下事件（最高位 0）
     if (scancode & 0x80) {
@@ -131,18 +146,26 @@ void keyboard_handler() {
         outb(0x20, 0x20);
         return;
     }
+    // tab
+    if (scancode == 0x0F) {
+        shell_tab_complete();
+        outb(0x20, 0x20);
+        return;
+    }
     // 回车
     if (scancode == 0x1C) {
         shell_input_char('\n');
         outb(0x20, 0x20);
         return;
     }
-
     // 查表
     char c = 0;
     if (scancode < 128) {
         c = shift_pressed ? keymap_shift[scancode]
                           : keymap_normal[scancode];
+        if (ctrl_pressed && c >= 'a' && c <= 'z') {
+            c = c - 'a' + 1;
+        }
     }
     if (c != 0) {
         shell_input_char(c);

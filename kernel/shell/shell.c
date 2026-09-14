@@ -7,19 +7,52 @@
 
 
 #define LINE_MAX    128
+#define HIST_MAX    8
 
 static char line_buffer[LINE_MAX];
 static int line_length = 0;
 static volatile int line_ready = 0;
 static fs_node_t *cwd = 0;
+static char history[HIST_MAX][LINE_MAX];
+static int hist_count = 0;
+static int hist_index = -1;
 
 
 // 键盘中断里调用：把字符放进缓存区
 void shell_input_char(char c)
 {
+    if ( c == 0x03) // Ctrl + C
+    {
+        print_line("^C");
+        line_length = 0;
+        line_ready = 1;
+        return;
+    }
+    if ( c == 0x0C) // Ctrl + L
+    {
+        clear_screen();
+        print_string("> ");
+        for (int i = 0; i < line_length; i++)
+        {
+            print_char(line_buffer[i]);
+        }
+        return;
+    }
     if ( c == '\n')
     {
         line_buffer[line_length] = '\0';
+        if (line_length > 0) {
+            if (hist_count < HIST_MAX) {
+                str_copy(history[hist_count], line_buffer, LINE_MAX);
+                hist_count++;
+            } else {
+                for (int i = 0; i < HIST_MAX - 1; i++)
+                    str_copy(history[i], history[i + 1], LINE_MAX);
+                str_copy(history[HIST_MAX - 1], line_buffer, LINE_MAX);
+            }
+        }
+
+        hist_index = -1;
         line_ready = 1;
         print_char('\n');
         return;
@@ -37,6 +70,122 @@ void shell_input_char(char c)
     {
         line_buffer[line_length++] = c;
         print_char(c);
+    }
+}
+
+void shell_history_up()
+{
+    if (hist_count == 0) return;
+    if (hist_index == -1) hist_index = hist_count - 1;
+    else if (hist_index > 0) hist_index--;
+
+    while (line_length > 0)
+    {
+        line_length--;
+        backspace();
+    }
+    int n = 0;
+    while (history[hist_index][n])
+    {
+        line_buffer[line_length++] = history[hist_index][n];
+        print_char(history[hist_index][n]);
+        n++;
+    }
+}
+
+void shell_history_down()
+{
+    if (hist_index == -1) return;
+
+    if (hist_index < hist_count - 1)
+    {
+        hist_index++;
+        while (line_length > 0)
+        {
+            line_length--;
+            backspace();
+        }
+        int n = 0;
+        while (history[hist_index][n])
+        {
+            line_buffer[line_length++] = history[hist_index][n];
+            print_char(history[hist_index][n]);
+            n++;
+        }
+    } else
+    {
+        hist_index = -1;
+        while (line_length > 0)
+        {
+            line_length--;
+            backspace();
+        }
+    }
+}
+
+void shell_tab_complete()
+{
+    static const char *cmds[] =
+    {
+        "help", "mem", "clear", "clean", "echo",
+        "ls", "mkdir", "touch", "cat", "write",
+        "rm", "cd", "pwd"
+    };
+    int n = sizeof(cmds) / sizeof(cmds[0]);
+
+    // 只在光标位于行尾且只输入了第一个单词时补全
+    if (line_length == 0) return;
+
+    // 检查 line_buffer 中是否已有空格（说明在输入参数，不做命令补全）
+    for (int i = 0; i < line_length; i++)
+    {
+        if (line_buffer[i] == ' ') return;
+    }
+
+    int match_count = 0;
+    const char *match = 0;
+    for (int i = 0; i < n; i++)
+    {
+        if (str_starts_with(cmds[i], line_buffer)) {
+            match = cmds[i];
+            match_count++;
+        }
+    }
+
+    if (match_count == 1)
+    {
+        // 唯一匹配，补全
+        while (line_length > 0)
+        {
+            line_length--;
+            backspace();
+        }
+        int k = 0;
+        while (match[k])
+        {
+            line_buffer[line_length++] = match[k];
+            print_char(match[k]);
+            k++;
+        }
+        line_buffer[line_length++] = ' ';
+        print_char(' ');
+    } else if (match_count > 1)
+    {
+        // 多个匹配，全部列出
+        print_char('\n');
+        for (int i = 0; i < n; i++)
+        {
+            if (str_starts_with(cmds[i], line_buffer)) {
+                print_string(cmds[i]);
+                print_char(' ');
+            }
+        }
+        print_line("");
+        print_string("> ");
+        for (int i = 0; i < line_length; i++)
+        {
+            print_char(line_buffer[i]);
+        }
     }
 }
 
