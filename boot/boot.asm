@@ -41,7 +41,7 @@ load_kernel:
     mov bx, 0x0000
 
     mov ah, 0x02           ; BIOS 读扇区
-    mov al, 64             ; 读取 16 个扇区
+    mov al, 64             ; 读取 64 个扇区/32KB
     mov ch, 0x00           ; 柱面 0
     mov cl, 0x02           ; 从扇区 2 开始
     mov dh, 0x00           ; 磁头 0
@@ -77,12 +77,6 @@ init_pm:
 
     mov ebp, 0x90000
     mov esp, ebp
-
-    ; 测试保护模式（可保留，会覆盖部分文本）
-    mov byte [0xB8000], 'P'
-    mov byte [0xB8001], 0x0F
-    mov byte [0xB8002], 'M'
-    mov byte [0xB8003], 0x0F
 
     ; 跳转到 C 内核
     call 0x10000

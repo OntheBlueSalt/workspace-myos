@@ -151,39 +151,6 @@ void keyboard_handler() {
     outb(0x20, 0x20);
 }
 
-// int tick_count = 0;
-
 void timer_handler() {
-    /*tick_count++;
-
-    int row = 24;
-    int col = 70;
-
-    char *video = (char *) 0xB8000;
-    int offset = (row * 80 + col) * 2;
-
-    char buf[10];
-    int n = tick_count;
-    int i = 0;
-    if (n == 0) buf[i++] = '0';
-    while (n>0) {
-        buf[i++] = '0' + (n % 10);
-        n /= 10;
-    }
-    // 逆序
-    for (int j = 0; j < i / 2; j++) {
-        char tmp = buf[j];
-        buf[j] = buf[i - 1 - j];
-        buf[i - 1 - j] = tmp;
-    }
-    buf[i] = '\0';
-
-    for (int j = 0; j < i; j++) {
-        video[(row * 80 + col + j) * 2] = buf[j];
-        video[(row * 80 + col + j) * 2 + 1] = 0x0F;
-    }
-    */
-
-//    scheduler_tick();
     outb(0x20, 0x20);
 }
