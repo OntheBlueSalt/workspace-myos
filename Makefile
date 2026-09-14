@@ -22,8 +22,9 @@ KERNEL_OBJECTS = $(KERNEL_C_OBJECTS) $(KERNEL_ASM_OBJECTS)
 LINK_OBJECTS = \
 	build/arch/start.o \
 	build/kernel.o \
-	build/shell/shell.o \
+	build/lib/string.o \
 	build/fs/ramfs.o \
+	build/shell/shell.o \
 	build/drivers/screen.o \
 	build/interrupt/idt.o \
 	build/mm/memory.o \

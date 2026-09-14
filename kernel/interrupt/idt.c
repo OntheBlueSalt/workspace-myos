@@ -163,10 +163,10 @@ void keyboard_handler() {
     outb(0x20, 0x20);
 }
 
-int tick_count = 0;
+// int tick_count = 0;
 
 void timer_handler() {
-    tick_count++;
+    /*tick_count++;
 
     int row = 24;
     int col = 70;
@@ -194,6 +194,7 @@ void timer_handler() {
         video[(row * 80 + col + j) * 2] = buf[j];
         video[(row * 80 + col + j) * 2 + 1] = 0x0F;
     }
+    */
 
 //    scheduler_tick();
     outb(0x20, 0x20);

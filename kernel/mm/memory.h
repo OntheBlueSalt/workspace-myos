@@ -7,10 +7,6 @@
 #define TOTAL_PAGES  4096                    // 16MB / 4KB
 #define BITMAP_SIZE  (TOTAL_PAGES / 8)
 
-static void set_bit(uint32_t page);
-static void clear_bit(uint32_t page);
-static int test_bit(uint32_t page);
-
 void     memory_init();
 void*    alloc_page();
 void     free_page(void* addr);
