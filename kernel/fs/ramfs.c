@@ -249,3 +249,23 @@ void ramfs_pwd(fs_node_t *cwd) {
     }
     print_char('\n');
 }
+
+void ramfs_get_path(fs_node_t *node, char *buf, int size)
+{
+    if (!node) { if (size > 0) buf[0] = '\0'; return; }
+    char stack[16][32];
+    int depth = 0;
+    fs_node_t *p = node;
+    while (p && p->parent && depth < 16) {
+        str_copy(stack[depth++], p->name, 32);
+        p = p->parent;
+    }
+    int idx = 0;
+    if (idx < size - 1) buf[idx++] = '/';
+    for (int i = depth - 1; i >= 0; i--) {
+        for (int j = 0; stack[i][j] && idx < size - 1; j++)
+            buf[idx++] = stack[i][j];
+        if (i > 0 && idx < size - 1) buf[idx++] = '/';
+    }
+    buf[idx] = '\0';
+}

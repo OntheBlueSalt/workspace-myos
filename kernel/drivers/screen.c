@@ -9,6 +9,7 @@ extern void outb(uint16_t port, uint8_t value);
 
 static int cursor_row = 0;
 static int cursor_col = 0;
+static void scroll_up();
 
 // 更新硬件光标位置
 void update_cursor(int row, int col) {
@@ -35,7 +36,8 @@ void print_char(char c) {
         cursor_row++;
         cursor_col = 0;
         if (cursor_row >= MAX_ROWS) {
-            cursor_row = 0;   // 简单滚动，回到顶部
+            scroll_up();
+            cursor_row = MAX_ROWS - 1;
         }
         update_cursor(cursor_row, cursor_col);
         return;
@@ -49,7 +51,8 @@ void print_char(char c) {
         cursor_col = 0;
         cursor_row++;
         if (cursor_row >= MAX_ROWS) {
-            cursor_row = 0;
+            scroll_up();
+            cursor_row = MAX_ROWS - 1;
         }
     }
     update_cursor(cursor_row, cursor_col);
@@ -115,5 +118,22 @@ void print_dec(uint32_t num) {
     }
     for (int j = i - 1; j >= 0; j--) {
         print_char(buf[j]);
+    }
+}
+
+// 滚轮滑动
+static void scroll_up()
+{
+    char *video = (char *) VIDEO_MEMORY;
+    for (int i = 0; i < (MAX_ROWS - 1) * MAX_COLS; i++)
+    {
+        video[i * 2] = video[(i + MAX_COLS) * 2];
+        video[i * 2 + 1] = video[(i + MAX_COLS) * 2 + 1];
+    }
+
+    for (int i = (MAX_ROWS - 1) * MAX_COLS; i < MAX_COLS * MAX_ROWS; i++)
+    {
+        video[i * 2] = ' ';
+        video[i * 2 + 1] = 0x0F;
     }
 }

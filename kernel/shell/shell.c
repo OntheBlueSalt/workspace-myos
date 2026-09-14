@@ -11,6 +11,7 @@
 static char line_buffer[LINE_MAX];
 static int line_length = 0;
 static volatile int line_ready = 0;
+static fs_node_t *cwd = 0;
 
 
 // 键盘中断里调用：把字符放进缓存区
@@ -50,6 +51,26 @@ static void cmd_mem()
     print_char('\n');
 }
 
+static void make_abs(const char *in, char *out, int outsize)
+{
+    if (in[0] == '/') {
+        int i = 0;
+        while (in[i] && i < outsize - 1) { out[i] = in[i]; i++; }
+        out[i] = '\0';
+        return;
+    }
+    char cwd_path[128];
+    ramfs_get_path(cwd, cwd_path, sizeof(cwd_path));
+    int i = 0;
+    while (cwd_path[i] && i < outsize - 1) { out[i] = cwd_path[i]; i++; }
+    if (i > 0 && out[i - 1] != '/') {
+        if (i < outsize - 1) out[i++] = '/';
+    }
+    int j = 0;
+    while (in[j] && i < outsize - 1) { out[i++] = in[j++]; }
+    out[i] = '\0';
+}
+
 
 // 执行一条命令
 static void execute(const char *cmd) {
@@ -57,7 +78,7 @@ static void execute(const char *cmd) {
         print_line("Commands:");
         print_line("  help        - show this");
         print_line("  mem         - memory info");
-        print_line("  clear       - clear screen");
+        print_line("  clear|clean - clear screen");
         print_line("  echo X      - print X");
         print_line("  ls [PATH]   - list directory");
         print_line("  mkdir PATH  - create directory");
@@ -65,9 +86,11 @@ static void execute(const char *cmd) {
         print_line("  cat PATH    - show file");
         print_line("  write PATH CONTENT - write file");
         print_line("  rm PATH     - delete file/dir");
+        print_line("  cd [PATH]   - change directory");
+        print_line("  pwd         - print working directory");
     } else if (str_eq(cmd, "mem")) {
         cmd_mem();
-    } else if (str_eq(cmd, "clear")) {
+    } else if (str_eq(cmd, "clear") || str_eq(cmd, "clean")) {
         clear_screen();
     } else if (str_eq(cmd, "echo")) {
         print_char('\n');
@@ -76,37 +99,64 @@ static void execute(const char *cmd) {
     } else if (cmd[0] == '\0') {
         // 空行
     } else if (str_eq(cmd, "ls")) {
-        ramfs_list("/");
+        char path[128];
+        ramfs_get_path(cwd, path, sizeof(path));
+        ramfs_list(path);
     } else if (str_starts_with(cmd, "ls ")) {
-        ramfs_list(cmd + 3);
+        char abs[128];
+        make_abs(cmd + 3, abs, sizeof(abs));
+        ramfs_list(abs);
+    } else if (str_eq(cmd, "pwd")) {
+        ramfs_pwd(cwd);
+    } else if (str_eq(cmd, "cd")) {
+        cwd = ramfs_root();
+    } else if (str_starts_with(cmd, "cd ")) {
+        char abs[128];
+        make_abs(cmd + 3, abs, sizeof(abs));
+        fs_node_t *target = ramfs_lookup(abs);
+        if (target && target->type == NODE_DIR)
+            cwd = target;
+        else
+            print_line("no such directory");
     } else if (str_starts_with(cmd, "mkdir ")) {
-        void *p = kmalloc(64);
-        if (p) print_line("kmalloc ok");
-        else   print_line("kmalloc failed");
+        char abs[128];
+        make_abs(cmd + 6, abs, sizeof(abs));
+        if (ramfs_mkdir(abs) == 0)
+            print_line("created dir");
+        else
+            print_line("failed");
     } else if (str_starts_with(cmd, "touch ")) {
-        if (ramfs_create(cmd + 6) == 0)
+        char abs[128];
+        make_abs(cmd + 6, abs, sizeof(abs));
+        if (ramfs_create(abs) == 0)
             print_line("created");
         else
             print_line("failed");
     } else if (str_starts_with(cmd, "cat ")) {
+        char abs[128];
+        make_abs(cmd + 4, abs, sizeof(abs));
         char buf[1024];
-        if (ramfs_read(cmd + 4, buf, sizeof(buf)) >= 0)
+        if (ramfs_read(abs, buf, sizeof(buf)) >= 0)
             print_line(buf);
         else
             print_line("no such file");
     } else if (str_starts_with(cmd, "rm ")) {
-        if (ramfs_delete(cmd + 3) == 0)
+        char abs[128];
+        make_abs(cmd + 3, abs, sizeof(abs));
+        if (ramfs_delete(abs) == 0)
             print_line("deleted");
         else
             print_line("no such file or not empty");
     } else if (str_starts_with(cmd, "write ")) {
         const char *p = cmd + 6;
-        char path[64];
+        char rel[64];
         int n = 0;
-        while (*p && *p != ' ' && n < 63) path[n++] = *p++;
-        path[n] = '\0';
+        while (*p && *p != ' ' && n < 63) rel[n++] = *p++;
+        rel[n] = '\0';
         if (*p == ' ') p++;
-        if (ramfs_write(path, p) == 0)
+        char abs[128];
+        make_abs(rel, abs, sizeof(abs));
+        if (ramfs_write(abs, p) == 0)
             print_line("written");
         else
             print_line("no such file");
@@ -118,6 +168,7 @@ static void execute(const char *cmd) {
 
 void shell_run()
 {
+    cwd = ramfs_root();
     print_string("> ");
     while (1)
     {

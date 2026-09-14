@@ -31,5 +31,6 @@ int         ramfs_read(const char *path, char *buf, uint32_t size);
 int         ramfs_delete(const char *path);
 void        ramfs_list(const char *path);
 void        ramfs_pwd(fs_node_t *cwd);
+void        ramfs_get_path(fs_node_t *node, char *buf, int size);
 
 #endif
