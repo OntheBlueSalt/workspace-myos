@@ -4,6 +4,8 @@
 #include "../mm/heap.h"
 #include "../fs/ramfs.h"
 #include "../lib/string.h"
+#include "../sched/scheduler.h"
+#include "../sched/tasks.h"
 
 
 #define LINE_MAX    128
@@ -223,7 +225,19 @@ static void make_abs(const char *in, char *out, int outsize)
 
 // 执行一条命令
 static void execute(const char *cmd) {
-    if (str_eq(cmd, "help")) {
+    // 拷贝并裁掉末尾空格
+    char buf[LINE_MAX];
+    int n = 0;
+    while (*cmd && n < LINE_MAX - 1) {
+        buf[n++] = *cmd++;
+    }
+    buf[n] = '\0';
+    while (n > 0 && buf[n - 1] == ' ') {
+        buf[n - 1] = '\0';
+        n--;
+    }
+
+    if (str_eq(buf, "help")) {
         print_line("Commands:");
         print_line("  help        - show this");
         print_line("  mem         - memory info");
@@ -237,71 +251,75 @@ static void execute(const char *cmd) {
         print_line("  rm PATH     - delete file/dir");
         print_line("  cd [PATH]   - change directory");
         print_line("  pwd         - print working directory");
-    } else if (str_eq(cmd, "mem")) {
+        print_line("  run a|b|c   - create task");
+        print_line("  start       - start first task");
+        print_line("  ps          - list tasks");
+        print_line("  kill PID    - kill task");
+    } else if (str_eq(buf, "mem")) {
         cmd_mem();
-    } else if (str_eq(cmd, "clear") || str_eq(cmd, "clean")) {
+    } else if (str_eq(buf, "clear") || str_eq(buf, "clean")) {
         clear_screen();
-    } else if (str_eq(cmd, "echo")) {
+    } else if (str_eq(buf, "echo")) {
         print_char('\n');
-    } else if (str_starts_with(cmd, "echo ")) {
-        print_line(cmd + 5);
-    } else if (cmd[0] == '\0') {
+    } else if (str_starts_with(buf, "echo ")) {
+        print_line(buf + 5);
+    } else if (buf[0] == '\0') {
         // 空行
-    } else if (str_eq(cmd, "ls")) {
+    } else if (str_eq(buf, "ls")) {
         char path[128];
         ramfs_get_path(cwd, path, sizeof(path));
         ramfs_list(path);
-    } else if (str_starts_with(cmd, "ls ")) {
+    } else if (str_starts_with(buf, "ls ")) {
         char abs[128];
-        make_abs(cmd + 3, abs, sizeof(abs));
+        make_abs(buf + 3, abs, sizeof(abs));
         ramfs_list(abs);
-    } else if (str_eq(cmd, "pwd")) {
+    } else if (str_eq(buf, "pwd")) {
         ramfs_pwd(cwd);
-    } else if (str_eq(cmd, "cd")) {
+    } else if (str_eq(buf, "cd")) {
         cwd = ramfs_root();
-    } else if (str_starts_with(cmd, "cd ")) {
+    } else if (str_starts_with(buf, "cd ")) {
         char abs[128];
-        make_abs(cmd + 3, abs, sizeof(abs));
+        make_abs(buf + 3, abs, sizeof(abs));
         fs_node_t *target = ramfs_lookup(abs);
         if (target && target->type == NODE_DIR)
             cwd = target;
         else
             print_line("no such directory");
-    } else if (str_starts_with(cmd, "mkdir ")) {
+    } else if (str_starts_with(buf, "mkdir ")) {
         char abs[128];
-        make_abs(cmd + 6, abs, sizeof(abs));
+        make_abs(buf + 6, abs, sizeof(abs));
         if (ramfs_mkdir(abs) == 0)
             print_line("created dir");
         else
             print_line("failed");
-    } else if (str_starts_with(cmd, "touch ")) {
+    } else if (str_starts_with(buf, "touch ")) {
         char abs[128];
-        make_abs(cmd + 6, abs, sizeof(abs));
+        make_abs(buf + 6, abs, sizeof(abs));
         if (ramfs_create(abs) == 0)
             print_line("created");
         else
             print_line("failed");
-    } else if (str_starts_with(cmd, "cat ")) {
+    } else if (str_starts_with(buf, "cat ")) {
         char abs[128];
-        make_abs(cmd + 4, abs, sizeof(abs));
-        char buf[1024];
-        if (ramfs_read(abs, buf, sizeof(buf)) >= 0)
-            print_line(buf);
+        make_abs(buf + 4, abs, sizeof(abs));
+        char content[1024];
+        if (ramfs_read(abs, content, sizeof(content)) >= 0)
+            print_line(content);
         else
             print_line("no such file");
-    } else if (str_starts_with(cmd, "rm ")) {
+    } else if (str_starts_with(buf, "rm ")) {
         char abs[128];
-        make_abs(cmd + 3, abs, sizeof(abs));
+        make_abs(buf + 3, abs, sizeof(abs));
         if (ramfs_delete(abs) == 0)
             print_line("deleted");
         else
             print_line("no such file or not empty");
-    } else if (str_starts_with(cmd, "write ")) {
-        const char *p = cmd + 6;
+    } else if (str_starts_with(buf, "write ")) {
+        const char *p = buf + 6;
         char rel[64];
-        int n = 0;
-        while (*p && *p != ' ' && n < 63) rel[n++] = *p++;
-        rel[n] = '\0';
+        int m = 0;
+        while (*p && *p != ' ' && m < 63) rel[m++] = *p++;
+        rel[m] = '\0';
         if (*p == ' ') p++;
         char abs[128];
         make_abs(rel, abs, sizeof(abs));
@@ -309,9 +327,40 @@ static void execute(const char *cmd) {
             print_line("written");
         else
             print_line("no such file");
+    } else if (str_eq(buf, "run a")) {
+        int pid = scheduler_create_task("A", task_a);
+        if (pid > 0) { print_string("started task "); print_dec(pid); print_char('\n'); }
+        else print_line("failed");
+    } else if (str_eq(buf, "run b")) {
+        int pid = scheduler_create_task("B", task_b);
+        if (pid > 0) { print_string("started task "); print_dec(pid); print_char('\n'); }
+        else print_line("failed");
+    } else if (str_eq(buf, "run c")) {
+        int pid = scheduler_create_task("C", task_c);
+        if (pid > 0) { print_string("started task "); print_dec(pid); print_char('\n'); }
+        else print_line("failed");
+    } else if (str_eq(buf, "run")) {
+        print_line("usage: run a|b|c");
+    } else if (str_starts_with(buf, "run ")) {
+        print_line("unknown task");
+    } else if (str_eq(buf, "ps")) {
+        scheduler_ps();
+    } else if (str_eq(buf, "start")) {
+        scheduler_start();
+    } else if (str_starts_with(buf, "kill ")) {
+        int pid = 0;
+        const char *p = buf + 5;
+        while (*p >= '0' && *p <= '9') {
+            pid = pid * 10 + (*p - '0');
+            p++;
+        }
+        if (scheduler_kill(pid) == 0)
+            print_line("killed");
+        else
+            print_line("no such pid");
     } else {
         print_string("Unknown command: ");
-        print_line(cmd);
+        print_line(buf);
     }
 }
 

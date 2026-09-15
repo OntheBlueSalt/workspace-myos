@@ -4,6 +4,7 @@
 #include "mm/memory.h"
 #include "mm/heap.h"
 #include "shell/shell.h"
+#include "sched/scheduler.h"
 
 extern uint32_t __bss_start;
 extern uint32_t __bss_end;
@@ -26,6 +27,7 @@ void main() {
     heap_init();
     ramfs_init();
     idt_init();
+    scheduler_init();
     
     shell_run();
 

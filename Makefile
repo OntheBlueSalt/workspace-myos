@@ -30,6 +30,7 @@ LINK_OBJECTS = \
 	build/mm/memory.o \
 	build/mm/heap.o \
 	build/sched/scheduler.o \
+	build/sched/tasks.o \
 	build/arch/interrupt.o \
 	build/arch/switch.o
 
@@ -66,8 +67,8 @@ $(KERNEL_BIN): $(KERNEL_ELF)
 # 拼接引导扇区 + 内核，填充到 32KB
 $(IMAGE): $(BOOT_BIN) $(KERNEL_BIN)
 	cat $(BOOT_BIN) $(KERNEL_BIN) > $(IMAGE)
-	dd if=/dev/zero bs=1 count=$$((32768 - $$(stat -c%s $(KERNEL_BIN)))) >> $(IMAGE) 2>/dev/null
-	truncate -s 33280 $(IMAGE)
+	dd if=/dev/zero bs=1 count=$$((65536 - $$(stat -c%s $(KERNEL_BIN)))) >> $(IMAGE) 2>/dev/null
+	truncate -s 66048 $(IMAGE)
 
 run: all
 	qemu-system-x86_64 -drive format=raw,file=$(IMAGE)

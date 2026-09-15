@@ -41,7 +41,7 @@ load_kernel:
     mov bx, 0x0000
 
     mov ah, 0x02           ; BIOS 读扇区
-    mov al, 64             ; 读取 64 个扇区/32KB
+    mov al, 128            ; 读取 64 个扇区/32KB
     mov ch, 0x00           ; 柱面 0
     mov cl, 0x02           ; 从扇区 2 开始
     mov dh, 0x00           ; 磁头 0
