@@ -1,5 +1,5 @@
 #include "screen.h"
-#include <stdint.h>
+#include "../lib/stdint.h"
 
 extern void outb(uint16_t port, uint8_t value);
 

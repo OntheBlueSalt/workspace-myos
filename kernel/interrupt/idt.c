@@ -1,7 +1,8 @@
 #include "idt.h"
 #include "../drivers/screen.h"
 #include "../shell/shell.h"
-#include <stdint.h>
+#include "../lib/stdint.h"
+#include "../sched/scheduler.h"
 
 
 // 定义 IDT 表，共 256 个条目
@@ -64,9 +65,6 @@ void idt_init() {
 
     // 加载 IDT
     asm volatile("lidt %0" : : "m"(idt_ptr));
-
-    // 开启中断
-    asm volatile("sti");
 }
 
 
@@ -174,6 +172,8 @@ void keyboard_handler() {
     outb(0x20, 0x20);
 }
 
-void timer_handler() {
+uint32_t timer_handler(uint32_t old_esp) {
+    uint32_t next = scheduler_tick(old_esp);
     outb(0x20, 0x20);
+    return next;
 }

@@ -1,7 +1,7 @@
 #ifndef SCREEN_H
 #define SCREEN_H
 
-#include <stdint.h>
+#include "../lib/stdint.h"
 
 void print_char(char c);
 void print_string(const char *str);

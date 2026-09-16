@@ -1,7 +1,7 @@
 #ifndef IDT_H
 #define IDT_H
 
-#include <stdint.h>
+#include "../lib/stdint.h"
 
 // IDT 条目结构
 struct idt_entry {
@@ -24,6 +24,6 @@ void pic_remap();
 // 初始化
 void idt_init();
 void keyboard_handler();
-void timer_handler();
+uint32_t timer_handler(uint32_t old_esp);
 
 #endif

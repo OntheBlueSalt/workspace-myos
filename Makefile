@@ -54,7 +54,7 @@ build/arch/%.o: kernel/arch/%.asm
 # C 文件（保留子目录结构）
 build/%.o: kernel/%.c
 	@mkdir -p $(dir $@)
-	$(GCC) -m32 -ffreestanding -fno-pic -fno-pie -c $< -o $@
+	$(GCC) -m32 -ffreestanding -fno-pic -fno-pie -Ikernel/lib -c $< -o $@
 
 # 链接内核
 $(KERNEL_ELF): $(KERNEL_OBJECTS) kernel/linker.ld

@@ -2,7 +2,7 @@
 #include "../mm/heap.h"
 #include "../drivers/screen.h"
 #include "../lib/string.h"
-#include <stdint.h>
+#include "../lib/stdint.h"
 
 static fs_node_t *root = 0;
 

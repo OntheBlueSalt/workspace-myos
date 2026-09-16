@@ -1,7 +1,7 @@
 #ifndef SHELL_H
 #define SHELL_H
 
-#include <stdint.h>
+#include "../lib/stdint.h"
 
 void shell_input_char(char c);
 

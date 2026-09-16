@@ -1,7 +1,7 @@
 #ifndef MEMORY_H
 #define MEMORY_H
 
-#include <stdint.h>
+#include "../lib/stdint.h"
 
 #define PAGE_SIZE    4096
 #define TOTAL_PAGES  4096                    // 16MB / 4KB

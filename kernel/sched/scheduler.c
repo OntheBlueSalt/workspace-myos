@@ -2,26 +2,32 @@
 #include "../mm/heap.h"
 #include "../drivers/screen.h"
 #include "../lib/string.h"
-#include "stdint.h"
 
 static task_t tasks[MAX_TASKS];
 static int task_count = 0;
 static int current_task = 0;
 
-#define STACK_SIZE 4096
+#define STACK_SIZE 2048
 
-extern void switch_to(uint32_t *old_esp, uint32_t new_esp);
 extern void start_first_task(uint32_t esp);
 
-static uint32_t static_stack[MAX_TASKS][1024];   // 每个任务 4KB
+static void setup_task_stack(task_t *t, void (*entry)())
+{
+    uint32_t *stack = kmalloc(STACK_SIZE);
+    if (!stack) return;
 
-static void setup_task_stack(task_t *t, void (*entry)(), int id) {
-    uint32_t *top = static_stack[id] + 1024;
+    uint32_t *top = stack + STACK_SIZE / 4;
 
-    *(--top) = (uint32_t)entry;
-    for (int i = 0; i < 8; i++) {
-        *(--top) = 0;
+    // 构造中断帧 iretd 会弹出 EIP | CS | EFLAGS
+    *--top = 0x202;
+    *--top = 0x08;
+    *--top = (uint32_t)entry;
+
+    for (int i = 0; i < 8; i++)
+    {
+        *--top = 0;
     }
+
     t->esp = (uint32_t)top;
 }
 
@@ -38,14 +44,16 @@ void scheduler_init()
     current_task = 0;
 }
 
-int scheduler_create_task(const char *name, void (*entry)()) {
+int scheduler_create_task(const char *name, void (*entry)())
+{
     if (task_count >= MAX_TASKS) return -1;
     int id = task_count;
 
     tasks[id].pid = id + 1;
     str_copy(tasks[id].name, name, TASK_NAME_MAX);
     tasks[id].state = TASK_READY;
-    setup_task_stack(&tasks[id], entry, id);
+
+    setup_task_stack(&tasks[id], entry);
 
     if (tasks[id].esp == 0) return -1;
     task_count++;
@@ -55,31 +63,34 @@ int scheduler_create_task(const char *name, void (*entry)()) {
 void scheduler_start()
 {
     if (task_count == 0) return;
+    asm volatile("sti");
     tasks[0].state = TASK_RUNNING;
     current_task = 0;
     start_first_task(tasks[0].esp);
 }
 
-void yield()
+uint32_t scheduler_tick(uint32_t old_esp)
 {
-    if (task_count <= 1) return;
+    if (task_count == 0) return old_esp;
+
+    tasks[current_task].esp = old_esp;
 
     int next = (current_task + 1) % task_count;
-    while (tasks[next].state != TASK_RUNNING && tasks[next].state != TASK_READY)
+    while (next != current_task && tasks[next].state == TASK_UNUSED)
     {
         next = (next + 1) % task_count;
-        if (next == current_task) return;
     }
-
-    task_t *old_task = &tasks[current_task];
-    if (old_task->state == TASK_RUNNING)
+    if (next == current_task)
     {
-        old_task->state = TASK_READY;
+        return old_esp;
     }
-    tasks[next].state = TASK_RUNNING;
+    if (tasks[current_task].state == TASK_RUNNING)
+    {
+        tasks[current_task].state = TASK_READY;
+    }
     current_task = next;
 
-    switch_to(&old_task->esp, tasks[next].esp);
+    return tasks[next].esp;
 }
 
 void scheduler_ps()
@@ -89,7 +100,7 @@ void scheduler_ps()
     {
         if (tasks[i].state == TASK_UNUSED) continue;
         print_dec(tasks[i].pid);
-        print_string("  ");
+        print_string("      ");
         print_string(tasks[i].name);
         print_string("  ");
         if (tasks[i].state == TASK_RUNNING) print_line("running");

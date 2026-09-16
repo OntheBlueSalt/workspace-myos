@@ -1,7 +1,7 @@
 #ifndef RAMFS_H
 #define RAMFS_H
 
-#include <stdint.h>
+#include "../lib/stdint.h"
 
 typedef enum {
     NODE_FILE,
