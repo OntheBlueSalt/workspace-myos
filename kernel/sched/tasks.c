@@ -32,3 +32,15 @@ void task_c()
         for (volatile int i = 0; i < 5000000; i++);
     }
 }
+
+// 只跑 5 次就结束
+void task_short()
+{
+    for (int n = 0; n < 5; n++) {
+        char *video = (char *)0xB8000;
+        video[POS(24, 72)] = '0' + n;
+        video[POS(24, 72) + 1] = 0x0F;
+        for (volatile int i = 0; i < 5000000; i++);
+    }
+    task_exit();
+}

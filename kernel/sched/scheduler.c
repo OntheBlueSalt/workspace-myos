@@ -16,6 +16,8 @@ static void setup_task_stack(task_t *t, void (*entry)())
     uint32_t *stack = kmalloc(STACK_SIZE);
     if (!stack) return;
 
+    t->stack_base = (uint32_t)stack;
+
     uint32_t *top = stack + STACK_SIZE / 4;
 
     // 构造中断帧 iretd 会弹出 EIP | CS | EFLAGS
@@ -46,17 +48,28 @@ void scheduler_init()
 
 int scheduler_create_task(const char *name, void (*entry)())
 {
-    if (task_count >= MAX_TASKS) return -1;
-    int id = task_count;
+    // 找一个空闲槽
+    int id = -1;
+    for (int i = 0; i < MAX_TASKS; i++) {
+        if (tasks[i].state == TASK_UNUSED) {
+            id = i;
+            break;
+        }
+    }
+    if (id == -1) return -1;
 
     tasks[id].pid = id + 1;
     str_copy(tasks[id].name, name, TASK_NAME_MAX);
     tasks[id].state = TASK_READY;
-
+    tasks[id].esp = 0;
+    tasks[id].stack_base = 0;
     setup_task_stack(&tasks[id], entry);
 
-    if (tasks[id].esp == 0) return -1;
-    task_count++;
+    if (tasks[id].esp == 0) {
+        tasks[id].state = TASK_UNUSED;
+        return -1;
+    }
+    if (id >= task_count) task_count = id + 1;
     return tasks[id].pid;
 }
 
@@ -73,24 +86,58 @@ uint32_t scheduler_tick(uint32_t old_esp)
 {
     if (task_count == 0) return old_esp;
 
+    int prev = current_task;
     tasks[current_task].esp = old_esp;
 
-    int next = (current_task + 1) % task_count;
-    while (next != current_task && tasks[next].state == TASK_UNUSED)
+    // 回收
+    for (int i = 0; i < task_count; i++)
     {
+        if (i == prev) continue;
+        if (tasks[i].state == TASK_END)
+        {
+            if (tasks[i].state == TASK_END)
+            {
+                if (tasks[i].stack_base)
+                {
+                    kfree((void *)tasks[i].stack_base);
+                    tasks[i].stack_base = 0;
+                }
+                tasks[i].state = TASK_UNUSED;
+            }
+        }
+    }
+
+    int next = (prev + 1) % task_count;
+    while (next != prev)
+    {
+        if (tasks[next].state == TASK_READY ||
+            tasks[next].state == TASK_RUNNING)
+        {
+            break;
+        }
         next = (next + 1) % task_count;
     }
-    if (next == current_task)
+    if (next == prev)
     {
         return old_esp;
     }
-    if (tasks[current_task].state == TASK_RUNNING)
+    if (tasks[prev].state == TASK_RUNNING)
     {
-        tasks[current_task].state = TASK_READY;
+        tasks[prev].state = TASK_READY;
     }
+    tasks[next].state = TASK_RUNNING;
     current_task = next;
 
     return tasks[next].esp;
+}
+
+void task_exit()
+{
+    tasks[current_task].state = TASK_END;
+    while (1)
+    {
+        asm volatile("hlt");
+    }
 }
 
 void scheduler_ps()
@@ -105,6 +152,7 @@ void scheduler_ps()
         print_string("  ");
         if (tasks[i].state == TASK_RUNNING) print_line("running");
         else if (tasks[i].state == TASK_READY) print_line("ready");
+        else if (tasks[i].state == TASK_END)     print_line("dead");
         else print_line("unused");
     }
 }
@@ -115,7 +163,7 @@ int scheduler_kill(int pid)
     {
         if (tasks[i].pid == pid && tasks[i].state != TASK_UNUSED)
         {
-            tasks[i].state = TASK_UNUSED;
+            tasks[i].state = TASK_END;
             return 0;
         }
     }

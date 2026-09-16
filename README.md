@@ -1,6 +1,20 @@
 # workspace-myos
 
+一个从零开始编写的 32 位 x86 操作系统，运行在 QEMU 上。
+
+## 功能
+
+- **引导**：BIOS → 引导扇区 → 保护模式 → C 内核
+- **中断**：IDT、PIC 重映射、键盘中断、定时器中断
+- **键盘**：Shift/Ctrl 修饰键、符号、方向键、Tab 补全、Ctrl+C/L
+- **屏幕**：文本模式输出、光标控制、自动滚动
+- **内存**：物理页分配（位图法）、内核堆分配（`kmalloc` / `kfree`）
+- **文件系统**：内存目录树（ramfs），支持文件/目录、绝对/相对路径
+- **Shell**：命令历史、Tab 补全、当前工作目录（`cwd`）
+- **多任务**：抢占式调度（定时器时间片）、任务创建/查看/终止
+
 ## 目录结构
+
 ```text
 workspace-myos/
 ├── boot/
@@ -19,12 +33,20 @@ workspace-myos/
 │   ├── interrupt/            # 中断管理
 │   │   ├── idt.c
 │   │   └── idt.h
+│   ├── lib/                  # 通用工具
+│   │   ├── stdint.h          # 自制标准类型
+│   │   ├── string.c
+│   │   └── string.h
 │   ├── mm/                   # 内存管理
 │   │   ├── memory.c
-│   │   └── memory.h
+│   │   ├── memory.h
+│   │   ├── heap.c
+│   │   └── heap.h
 │   ├── sched/                # 任务调度
 │   │   ├── scheduler.c
-│   │   └── scheduler.h
+│   │   ├── scheduler.h
+│   │   ├── tasks.c           # 示例任务
+│   │   └── tasks.h
 │   ├── shell/                # shell
 │   │   ├── shell.c
 │   │   └── shell.h
@@ -48,6 +70,12 @@ sudo apt install build-essential nasm qemu-system-x86 gdb
 - gcc:C编辑器
 - qemu-system-x86:模拟x86计算机
 - gdb:调试器
+
+## 构建与运行
+```bash
+make clean # 清理
+make run #运行
+```
 
 ## 相关命令
 ```bash

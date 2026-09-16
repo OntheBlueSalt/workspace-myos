@@ -339,6 +339,10 @@ static void execute(const char *cmd) {
         int pid = scheduler_create_task("C", task_c);
         if (pid > 0) { print_string("started task "); print_dec(pid); print_char('\n'); }
         else print_line("failed");
+    } else if (str_eq(buf, "run s")) {
+        int pid = scheduler_create_task("S", task_short);
+        if (pid > 0) { print_string("started task "); print_dec(pid); print_char('\n'); }
+        else print_line("failed");
     } else if (str_eq(buf, "run")) {
         print_line("usage: run a|b|c");
     } else if (str_starts_with(buf, "run ")) {
