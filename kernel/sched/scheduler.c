@@ -7,7 +7,10 @@ static task_t tasks[MAX_TASKS];
 static int task_count = 0;
 static int current_task = 0;
 
+static volatile uint32_t global_tick = 0;
+
 #define STACK_SIZE 2048
+#define TICK_MS    10
 
 extern void start_first_task(uint32_t esp);
 
@@ -40,6 +43,8 @@ void scheduler_init()
         tasks[i].state = TASK_UNUSED;
         tasks[i].pid = 0;
         tasks[i].esp = 0;
+        tasks[i].stack_base = 0;
+        tasks[i].wake_tick = 0;
         tasks[i].name[0] = '\0';
     }
     task_count = 0;
@@ -76,7 +81,6 @@ int scheduler_create_task(const char *name, void (*entry)())
 void scheduler_start()
 {
     if (task_count == 0) return;
-    asm volatile("sti");
     tasks[0].state = TASK_RUNNING;
     current_task = 0;
     start_first_task(tasks[0].esp);
@@ -86,8 +90,18 @@ uint32_t scheduler_tick(uint32_t old_esp)
 {
     if (task_count == 0) return old_esp;
 
+    global_tick++;
+
     int prev = current_task;
     tasks[current_task].esp = old_esp;
+
+    for (int i = 0; i < task_count; i++)
+    {
+        if (tasks[i].state == TASK_SLEEPING && global_tick >= tasks[i].wake_tick)
+        {
+            tasks[i].state = TASK_READY;
+        }
+    }
 
     // 回收
     for (int i = 0; i < task_count; i++)
@@ -95,23 +109,19 @@ uint32_t scheduler_tick(uint32_t old_esp)
         if (i == prev) continue;
         if (tasks[i].state == TASK_END)
         {
-            if (tasks[i].state == TASK_END)
+            if (tasks[i].stack_base)
             {
-                if (tasks[i].stack_base)
-                {
-                    kfree((void *)tasks[i].stack_base);
-                    tasks[i].stack_base = 0;
-                }
-                tasks[i].state = TASK_UNUSED;
+                kfree((void *)tasks[i].stack_base);
+                tasks[i].stack_base = 0;
             }
+            tasks[i].state = TASK_UNUSED;
         }
     }
 
     int next = (prev + 1) % task_count;
     while (next != prev)
     {
-        if (tasks[next].state == TASK_READY ||
-            tasks[next].state == TASK_RUNNING)
+        if (tasks[next].state == TASK_READY || tasks[next].state == TASK_RUNNING)
         {
             break;
         }
@@ -119,6 +129,10 @@ uint32_t scheduler_tick(uint32_t old_esp)
     }
     if (next == prev)
     {
+        if (tasks[prev].state == TASK_RUNNING || tasks[prev].state == TASK_READY)
+        {
+            return old_esp;
+        }
         return old_esp;
     }
     if (tasks[prev].state == TASK_RUNNING)
@@ -140,6 +154,19 @@ void task_exit()
     }
 }
 
+void task_sleep(uint32_t ms)
+{
+    int self = current_task;
+    uint32_t ticks = (ms + TICK_MS - 1) / TICK_MS;
+    tasks[self].wake_tick = global_tick + ticks;
+    tasks[self].state = TASK_SLEEPING;
+
+    while (tasks[self].state == TASK_SLEEPING)
+    {
+        asm volatile("hlt");
+    }
+}
+
 void scheduler_ps()
 {
     print_line("PID    NAME                    STATE");
@@ -153,6 +180,7 @@ void scheduler_ps()
         if (tasks[i].state == TASK_RUNNING) print_line("running");
         else if (tasks[i].state == TASK_READY) print_line("ready");
         else if (tasks[i].state == TASK_END)     print_line("dead");
+        else if (tasks[i].state == TASK_SLEEPING) print_line("sleeping");
         else print_line("unused");
     }
 }

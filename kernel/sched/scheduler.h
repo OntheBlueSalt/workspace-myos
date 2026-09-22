@@ -11,7 +11,8 @@ typedef enum
     TASK_UNUSED = 0,
     TASK_RUNNING = 1,
     TASK_READY = 2,
-    TASK_END = 3
+    TASK_END = 3,
+    TASK_SLEEPING = 4
 } task_state_t;
 
 typedef struct {
@@ -20,6 +21,7 @@ typedef struct {
     int             pid;
     char            name[TASK_NAME_MAX];
     task_state_t    state;
+    uint32_t        wake_tick;
 } task_t;
 
 void        scheduler_init();
@@ -27,6 +29,7 @@ int         scheduler_create_task(const char *task_name, void (*entry)());
 void        scheduler_start();
 uint32_t    scheduler_tick(uint32_t old_esp);
 void        task_exit();
+void        task_sleep(uint32_t ms);
 void        scheduler_ps();
 int         scheduler_kill(int pid);
 

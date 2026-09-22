@@ -55,6 +55,11 @@ void pic_remap() {
 
 void idt_init() {
     pic_remap();
+    // 设置 PIT 频率为 100Hz（每 10ms 一次中断）
+    uint32_t divisor = 1193182 / 100;
+    outb(0x43, 0x36);
+    outb(0x40, divisor & 0xFF);
+    outb(0x40, (divisor >> 8) & 0xFF);
     // 设置 IDT 指针
     idt_ptr.limit = sizeof(struct idt_entry) * 256 - 1;
     idt_ptr.base  = (uint32_t)&idt;
