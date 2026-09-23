@@ -29,6 +29,7 @@ LINK_OBJECTS = \
 	build/interrupt/idt.o \
 	build/mm/memory.o \
 	build/mm/heap.o \
+	build/mm/paging.o \
 	build/sched/scheduler.o \
 	build/sched/tasks.o \
 	build/arch/interrupt.o \

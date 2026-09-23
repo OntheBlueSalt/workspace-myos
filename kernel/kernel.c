@@ -3,6 +3,7 @@
 #include "interrupt/idt.h"
 #include "mm/memory.h"
 #include "mm/heap.h"
+#include "mm/paging.h"
 #include "shell/shell.h"
 #include "sched/scheduler.h"
 #include "sched/tasks.h"
@@ -27,6 +28,7 @@ void main() {
     memory_init();
     heap_init();
     ramfs_init();
+    paging_init();
     idt_init();
 
     scheduler_init();
