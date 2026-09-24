@@ -197,3 +197,8 @@ int scheduler_kill(int pid)
     }
     return -1;
 }
+
+int current_task_pid()
+{
+    return tasks[current_task].pid;
+}

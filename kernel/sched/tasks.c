@@ -1,5 +1,6 @@
 #include "scheduler.h"
 #include "../lib/stdint.h"
+#include "../syscall/syscall.h"
 
 #define POS(row, col) ((row * 80 + col) * 2)
 
@@ -48,11 +49,9 @@ void task_short()
 // sleep任务
 void task_sleeper()
 {
-    char *video = (char *)0xB8000;
     while (1)
     {
-        video[POS(24, 78)] = 'S';
-        video[POS(24, 78) + 1] = 0x0F;
-        task_sleep(1000);
+        sys_print('S');
+        sys_sleep(1000);
     }
 }

@@ -23,6 +23,7 @@ LINK_OBJECTS = \
 	build/arch/start.o \
 	build/kernel.o \
 	build/lib/string.o \
+	build/syscall/syscall.o \
 	build/fs/ramfs.o \
 	build/shell/shell.o \
 	build/drivers/screen.o \

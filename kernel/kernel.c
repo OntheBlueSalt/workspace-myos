@@ -7,6 +7,7 @@
 #include "shell/shell.h"
 #include "sched/scheduler.h"
 #include "sched/tasks.h"
+#include "syscall/syscall.h"
 
 extern uint32_t __bss_start;
 extern uint32_t __bss_end;
@@ -30,6 +31,7 @@ void main() {
     ramfs_init();
     paging_init();
     idt_init();
+    syscall_init();
 
     scheduler_init();
     scheduler_create_task("shell", shell_run);   // 任务 0

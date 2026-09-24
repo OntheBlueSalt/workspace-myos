@@ -32,5 +32,6 @@ void        task_exit();
 void        task_sleep(uint32_t ms);
 void        scheduler_ps();
 int         scheduler_kill(int pid);
+int         current_task_pid();
 
 #endif
