@@ -31,13 +31,12 @@ timer_handler_entry:
 
 syscall_entry:
     pusha
-    push ecx        ; 第 4 个参数（实际没用）
-    push edx        ; 第 3 个参数
-    push ecx        ; 第 2 个参数
-    push ebx        ; 第 1 个参数
-    push eax        ; 系统调用号
+    push ecx            ; 参数 c
+    push edx            ; 参数 b
+    push ebx            ; 参数 a
+    push eax            ; 系统调用号
     call syscall_dispatch
-    add esp, 20     ; 清理 5 个参数
-    mov [esp + 28], eax  ; 把返回值写到 pusha 保存的 EAX 位置
+    add esp, 16         ; 4 个参数
+    mov [esp + 28], eax
     popa
     iretd

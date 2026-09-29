@@ -7,9 +7,7 @@
 void task_a()
 {
     while (1) {
-        char *video = (char *)0xB8000;
-        video[POS(24, 70)] = 'A';
-        video[POS(24, 70) + 1] = 0x0F;
+        sys_print_at('A', 70);
         for (volatile int i = 0; i < 5000000; i++);
     }
 }
@@ -17,9 +15,7 @@ void task_a()
 void task_b()
 {
     while (1) {
-        char *video = (char *)0xB8000;
-        video[POS(24, 72)] = 'B';
-        video[POS(24, 72) + 1] = 0x0F;
+        sys_print_at('B', 72);
         for (volatile int i = 0; i < 5000000; i++);
     }
 }
@@ -27,9 +23,7 @@ void task_b()
 void task_c()
 {
     while (1) {
-        char *video = (char *)0xB8000;
-        video[POS(24, 74)] = 'C';
-        video[POS(24, 74) + 1] = 0x0F;
+        sys_print_at('C', 74);
         for (volatile int i = 0; i < 5000000; i++);
     }
 }
@@ -51,7 +45,7 @@ void task_sleeper()
 {
     while (1)
     {
-        sys_print('S');
+        sys_print_at('S', 78);
         sys_sleep(1000);
     }
 }

@@ -15,5 +15,6 @@ void sys_print(char c);
 void sys_exit();
 void sys_sleep(uint32_t ms);
 int sys_getpid();
+void sys_print_at(char c, int col);
 
 #endif

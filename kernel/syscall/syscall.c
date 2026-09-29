@@ -13,7 +13,13 @@ uint32_t syscall_dispatch(uint32_t num, uint32_t a, uint32_t b, uint32_t c)
     switch (num)
     {
         case SYS_PRINT:
-            print_char((char)a);
+            char *video = (char *)0xB8000;
+            int col = (int)b;
+            if (col < 0) col = 0;
+            if (col > 79) col = 79;
+            int pos = (24 * 80 + col) * 2;
+            video[pos] = (char)a;
+            video[pos + 1] = 0x0F;
             return 0;
         case SYS_EXIT:
             task_exit();
@@ -32,7 +38,7 @@ void syscall_init()
 {
     // 设置 IDT 0x80 号中断
     extern void idt_set_gate(int num, uint32_t base, uint16_t selector, uint8_t flags);
-    idt_set_gate(0x80, (uint32_t)syscall_entry, 0x80, 0xEE);
+    idt_set_gate(0x80, (uint32_t)syscall_entry, 0x08, 0xEF);
     // 0xEE = 32 位中断门， DPL=3(允许用户态调用)
 }
 
@@ -57,4 +63,9 @@ int sys_getpid()
     uint32_t ret;
     asm volatile("int $0x80":"=a"(ret):"a"(SYS_GETPID));
     return (int)ret;
+}
+
+void sys_print_at(char c, int col)
+{
+    asm volatile("int $0x80" : : "a"(SYS_PRINT), "b"((uint32_t)c), "c"((uint32_t)col));
 }
