@@ -222,6 +222,25 @@ static void make_abs(const char *in, char *out, int outsize)
     out[i] = '\0';
 }
 
+// 测试
+static void test_exception(char *which)
+{
+    if (str_eq(which, "de")) {
+        volatile int a = 1;
+        volatile int b = 0;
+        volatile int c = a / b;
+        (void)c;
+    } else if (str_eq(which, "bp")) {
+        asm volatile("int3");
+    } else if (str_eq(which, "pf")) {
+        volatile uint32_t *p = (volatile uint32_t *)0x02000000;
+        *p = 0x12345678;
+    } else if (str_eq(which, "ud")) {
+        asm volatile(".byte 0x0f, 0x0b");
+    } else {
+        print_line("usage: test de|bp|pf|ud");
+    }
+}
 
 // 执行一条命令
 static void execute(const char *cmd) {
@@ -373,6 +392,8 @@ static void execute(const char *cmd) {
             print_line("killed");
         else
             print_line("no such pid");
+    } else if (str_starts_with(buf, "test ")) {
+        test_exception(buf + 5);
     } else {
         print_string("Unknown command: ");
         print_line(buf);

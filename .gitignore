@@ -60,3 +60,4 @@ build/*
 os-image.bin
 
 .idea
+.vs
