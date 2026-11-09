@@ -5,8 +5,9 @@
 static uint32_t page_directory[1024] __attribute__((aligned(4096)));
 static uint32_t page_tables[4][1024] __attribute__((aligned(4096)));
 
-#define PAGE_PRESENT 0x1
-#define PAGE_RW      0x2
+
+static uint32_t user_page_table[1024] __attribute__((aligned(4096)));
+#define USER_PDE_INDEX (0x40000000 >> 22)
 
 void paging_init()
 {
@@ -21,10 +22,7 @@ void paging_init()
         page_directory[t] = ((uint32_t)page_tables[t]) | PAGE_PRESENT | PAGE_RW;
     }
     // 其余页目项填 0 (未映射)
-    for (int i = 4; i < 1024; ++i)
-    {
-        page_directory[i] = 0;
-    }
+    page_directory[USER_PDE_INDEX] = ((uint32_t)user_page_table) | PAGE_PRESENT | PAGE_RW | PAGE_USER;
 
     // 加载页目录到 CR3
     asm volatile ("mov %0, %%cr3" : : "r" (page_directory));
@@ -36,4 +34,16 @@ void paging_init()
     asm volatile ("mov %0, %%cr0" : : "r" (cr0));
 
     print_line("Paging enabled");
+}
+
+void paging_map_user(uint32_t vaddr, uint32_t paddr, uint32_t flags)
+{
+    uint32_t pde = vaddr >> 22;
+    uint32_t pte = (vaddr >> 12) & 0x3FF;
+
+    if (pde != USER_PDE_INDEX) return;
+
+    user_page_table[pte] = (paddr & 0xFFFFF000) | (flags & 0xFFF);
+
+    asm volatile("invlpg (%0)" : : "r"(vaddr) : "memory");
 }

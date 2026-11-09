@@ -33,6 +33,23 @@ void main() {
     paging_init();
     exception_init();
     idt_init();
+
+    uint32_t test_page = (uint32_t)alloc_page();
+    if (!test_page) {
+        print_line("user map test: alloc failed");
+    } else {
+        paging_map_user(0x40003000, test_page, PAGE_PRESENT | PAGE_RW | PAGE_USER);
+
+        volatile uint32_t *test = (volatile uint32_t *)0x40003000;
+        *test = 0x12345678;
+
+        if (*test == 0x12345678) {
+            print_line("user map ok");
+        } else {
+            print_line("user map failed");
+        }
+    }
+    
     syscall_init();
 
     scheduler_init();
