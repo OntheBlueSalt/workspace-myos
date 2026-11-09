@@ -28,6 +28,7 @@ LINK_OBJECTS = \
 	build/shell/shell.o \
 	build/drivers/screen.o \
 	build/interrupt/idt.o \
+	build/interrupt/exception.o \
 	build/mm/memory.o \
 	build/mm/heap.o \
 	build/mm/paging.o \

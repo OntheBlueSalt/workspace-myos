@@ -8,6 +8,7 @@
 #include "sched/scheduler.h"
 #include "sched/tasks.h"
 #include "syscall/syscall.h"
+#include "interrupt/exception.h"
 
 extern uint32_t __bss_start;
 extern uint32_t __bss_end;
@@ -30,6 +31,7 @@ void main() {
     heap_init();
     ramfs_init();
     paging_init();
+    exception_init();
     idt_init();
     syscall_init();
 
