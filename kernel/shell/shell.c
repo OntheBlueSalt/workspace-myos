@@ -274,6 +274,7 @@ static void execute(const char *cmd) {
         print_line("  start       - start first task");
         print_line("  ps          - list tasks");
         print_line("  kill PID    - kill task");
+        print_line("  run u       - create ring3 user task");
     } else if (str_eq(buf, "mem")) {
         cmd_mem();
     } else if (str_eq(buf, "clear") || str_eq(buf, "clean")) {
@@ -394,6 +395,17 @@ static void execute(const char *cmd) {
             print_line("no such pid");
     } else if (str_starts_with(buf, "test ")) {
         test_exception(buf + 5);
+    } else if (str_eq(buf, "run u")) {
+        int pid = scheduler_create_user_task("U", 0x40000000, 0x40002000);
+        if (pid > 0) {
+            print_string("started user task ");
+            print_dec(pid);
+            print_char('\n');
+        } else {
+            print_line("failed");
+        }
+    } else if (str_eq(buf, "run")) {
+        print_line("usage: run a|b|c|u");
     } else {
         print_string("Unknown command: ");
         print_line(buf);

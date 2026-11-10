@@ -18,6 +18,7 @@ typedef enum
 typedef struct {
     uint32_t        esp;
     uint32_t        stack_base;
+    uint32_t        kernel_stack_top;
     int             pid;
     char            name[TASK_NAME_MAX];
     task_state_t    state;
@@ -33,5 +34,7 @@ void        task_sleep(uint32_t ms);
 void        scheduler_ps();
 int         scheduler_kill(int pid);
 int         current_task_pid();
+int         scheduler_create_task(const char *task_name, void (*entry)());
+int         scheduler_create_user_task(const char *task_name, uint32_t entry, uint32_t user_stack_top);
 
 #endif

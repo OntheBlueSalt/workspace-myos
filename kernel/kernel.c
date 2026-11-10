@@ -9,6 +9,7 @@
 #include "sched/tasks.h"
 #include "syscall/syscall.h"
 #include "interrupt/exception.h"
+#include "gdt/gdt.h"
 
 extern uint32_t __bss_start;
 extern uint32_t __bss_end;
@@ -31,6 +32,7 @@ void main() {
     heap_init();
     ramfs_init();
     paging_init();
+    gdt_init();
     exception_init();
     idt_init();
 
@@ -49,7 +51,7 @@ void main() {
             print_line("user map failed");
         }
     }
-    
+
     syscall_init();
 
     scheduler_init();

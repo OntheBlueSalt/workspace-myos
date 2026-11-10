@@ -13,7 +13,7 @@ KERNEL_C_SOURCES = $(shell find kernel -name '*.c')
 KERNEL_C_OBJECTS = $(patsubst kernel/%.c, build/%.o, $(KERNEL_C_SOURCES))
 
 # 汇编源文件
-KERNEL_ASM_OBJECTS = build/arch/start.o build/arch/interrupt.o build/arch/switch.o
+KERNEL_ASM_OBJECTS = build/arch/start.o build/arch/interrupt.o build/arch/switch.o build/arch/gdt_load.o build/arch/user_stub.o
 
 # 所有内核对象（用于依赖）
 KERNEL_OBJECTS = $(KERNEL_C_OBJECTS) $(KERNEL_ASM_OBJECTS)
@@ -21,6 +21,8 @@ KERNEL_OBJECTS = $(KERNEL_C_OBJECTS) $(KERNEL_ASM_OBJECTS)
 # 链接顺序（start.o 必须第一，其余按依赖顺序排）
 LINK_OBJECTS = \
 	build/arch/start.o \
+	build/gdt/gdt.o \
+	build/arch/gdt_load.o \
 	build/kernel.o \
 	build/lib/string.o \
 	build/syscall/syscall.o \
@@ -35,7 +37,8 @@ LINK_OBJECTS = \
 	build/sched/scheduler.o \
 	build/sched/tasks.o \
 	build/arch/interrupt.o \
-	build/arch/switch.o
+	build/arch/switch.o \
+	build/arch/user_stub.o
 
 all: $(IMAGE)
 

@@ -31,8 +31,8 @@ timer_handler_entry:
 
 syscall_entry:
     pusha
-    push ecx            ; 参数 c
-    push edx            ; 参数 b
+    push edx            ; 参数 c
+    push ecx            ; 参数 b
     push ebx            ; 参数 a
     push eax            ; 系统调用号
     call syscall_dispatch

@@ -5,7 +5,6 @@
 static uint32_t page_directory[1024] __attribute__((aligned(4096)));
 static uint32_t page_tables[4][1024] __attribute__((aligned(4096)));
 
-
 static uint32_t user_page_table[1024] __attribute__((aligned(4096)));
 #define USER_PDE_INDEX (0x40000000 >> 22)
 
@@ -22,6 +21,12 @@ void paging_init()
         page_directory[t] = ((uint32_t)page_tables[t]) | PAGE_PRESENT | PAGE_RW;
     }
     // 其余页目项填 0 (未映射)
+    for (int i = 4; i < 1024; ++i)
+    {
+        page_directory[i] = 0;
+    }
+
+    // 重新映射
     page_directory[USER_PDE_INDEX] = ((uint32_t)user_page_table) | PAGE_PRESENT | PAGE_RW | PAGE_USER;
 
     // 加载页目录到 CR3

@@ -1,5 +1,8 @@
 #include "scheduler.h"
 #include "../mm/heap.h"
+#include "../mm/memory.h"
+#include "../mm/paging.h"
+#include "../gdt/gdt.h"
 #include "../drivers/screen.h"
 #include "../lib/string.h"
 
@@ -13,6 +16,8 @@ static volatile uint32_t global_tick = 0;
 #define TICK_MS    10
 
 extern void start_first_task(uint32_t esp);
+extern uint8_t user_stub_start[];
+extern uint8_t user_stub_end[];
 
 static void setup_task_stack(task_t *t, void (*entry)())
 {
@@ -22,6 +27,8 @@ static void setup_task_stack(task_t *t, void (*entry)())
     t->stack_base = (uint32_t)stack;
 
     uint32_t *top = stack + STACK_SIZE / 4;
+
+    t->kernel_stack_top = (uint32_t)top;
 
     // 构造中断帧 iretd 会弹出 EIP | CS | EFLAGS
     *--top = 0x202;
@@ -44,6 +51,7 @@ void scheduler_init()
         tasks[i].pid = 0;
         tasks[i].esp = 0;
         tasks[i].stack_base = 0;
+        tasks[i].kernel_stack_top = 0;
         tasks[i].wake_tick = 0;
         tasks[i].name[0] = '\0';
     }
@@ -80,9 +88,9 @@ int scheduler_create_task(const char *name, void (*entry)())
 
 void scheduler_start()
 {
-    if (task_count == 0) return;
     tasks[0].state = TASK_RUNNING;
     current_task = 0;
+    tss_set_esp0(tasks[0].kernel_stack_top);
     start_first_task(tasks[0].esp);
 }
 
@@ -139,8 +147,11 @@ uint32_t scheduler_tick(uint32_t old_esp)
     {
         tasks[prev].state = TASK_READY;
     }
+
     tasks[next].state = TASK_RUNNING;
     current_task = next;
+
+    tss_set_esp0(tasks[next].kernel_stack_top);
 
     return tasks[next].esp;
 }
@@ -201,4 +212,80 @@ int scheduler_kill(int pid)
 int current_task_pid()
 {
     return tasks[current_task].pid;
+}
+
+static void setup_user_task_stack(task_t *t, uint32_t entry, uint32_t user_stack_top)
+{
+    uint32_t *stack = kmalloc(STACK_SIZE);
+    if (!stack) return;
+
+    t->stack_base = (uint32_t)stack;
+
+    uint32_t *top = stack + STACK_SIZE / 4;
+    t->kernel_stack_top = (uint32_t)top;
+
+    // Ring3 iret 帧：SS | ESP | EFLAGS | CS | EIP
+    *--top = USER_DATA_SEL | 3;      // 0x23
+    *--top = user_stack_top;
+    *--top = 0x202;                  // IF=1
+    *--top = USER_CODE_SEL | 3;      // 0x1B
+    *--top = entry;
+
+    // pusha 的 8 个通用寄存器
+    for (int i = 0; i < 8; i++)
+    {
+        *--top = 0;
+    }
+
+    t->esp = (uint32_t)top;
+}
+
+int scheduler_create_user_task(const char *name, uint32_t entry, uint32_t user_stack_top)
+{
+    static int user_task_created = 0;
+    if (user_task_created) return -1;
+
+    int id = -1;
+    for (int i = 0; i < MAX_TASKS; i++) {
+        if (tasks[i].state == TASK_UNUSED) {
+            id = i;
+            break;
+        }
+    }
+    if (id == -1) return -1;
+
+    uint32_t code_phys  = (uint32_t)alloc_page();
+    uint32_t stack_phys = (uint32_t)alloc_page();
+    if (!code_phys || !stack_phys) return -1;
+
+    uint32_t code_page  = entry & 0xFFFFF000;
+    uint32_t stack_page = (user_stack_top - 1) & 0xFFFFF000;
+
+    uint32_t size = (uint32_t)(user_stub_end - user_stub_start);
+    if (size > 4096) return -1;
+
+    uint8_t *dst = (uint8_t *)code_phys;
+    for (uint32_t i = 0; i < size; i++) {
+        dst[i] = user_stub_start[i];
+    }
+
+    paging_map_user(code_page,  code_phys,  PAGE_PRESENT | PAGE_RW | PAGE_USER);
+    paging_map_user(stack_page, stack_phys, PAGE_PRESENT | PAGE_RW | PAGE_USER);
+
+    tasks[id].pid = id + 1;
+    str_copy(tasks[id].name, name, TASK_NAME_MAX);
+    tasks[id].state = TASK_READY;
+    tasks[id].esp = 0;
+    tasks[id].stack_base = 0;
+    tasks[id].kernel_stack_top = 0;
+    setup_user_task_stack(&tasks[id], entry, user_stack_top);
+
+    if (tasks[id].esp == 0) {
+        tasks[id].state = TASK_UNUSED;
+        return -1;
+    }
+
+    if (id >= task_count) task_count = id + 1;
+    user_task_created = 1;
+    return tasks[id].pid;
 }
